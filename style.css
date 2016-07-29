@@ -1,0 +1,119 @@
+/* kindred specific */
+
+.msgmonger-thread::after {
+	clear: both;
+	content: '';
+	display: block;
+}
+
+.msgmonger-threads-list .house-swap-listing-image {
+	/*    float: none;*/
+	height: 96px;
+	width: 96px;
+	border-radius: 5px;
+}
+.msgmonger-threads-list .house-swap-listing-button {
+	/*    margin-bottom: 0;*/
+	/*    position: initial;*/
+	/*    top: initial;*/
+	/*    right: initial;*/
+}
+.msgmonger-threads-list .thread-listing-button {
+	float: right;
+}
+
+/*Form*/
+
+.message-submission-form textarea {
+	font: inherit;
+	/*	background: hsla(185,44%,76%,1);*/
+	border: 1px solid #66a038;
+	border-radius: 5px 0 0 5px;
+	resize: none;
+	float: left;
+	box-sizing: border-box;
+	width: calc(100% - 100px);
+	height: 100px;
+}
+.message-submission-form input[type=submit] {
+	border: 1px solid #66a038;
+	/*	background-color: #1199b1;*/
+	background-color: #6dab3c;
+	background-image: linear-gradient(to bottom,rgba(255,255,255,.2) 0,rgba(255,255,255,.01) 100%);
+	color: #fff;
+	border-radius: 0 5px 5px 0;
+	padding: 10px;
+	width: 100px;
+	height: 100px;
+}
+
+/* SPLIT VIEW */
+
+/*.msgmonger-messages-list {
+width: 70%;
+float: left;
+}
+.msgmonger-threads-list {
+width: 25%;
+float: right;
+}
+*/
+/* MESSAGES */
+.message_from_me, .message_from_them {
+	margin-bottom: 1em;
+	padding: 1em;
+	border-radius: 5px;
+}
+
+.message_from_me {
+	background: #c5e7ed;
+	margin-right: 3em;
+}
+.message_from_them {
+	background: #e4ede1;
+	margin-left: 3em;
+}
+.msgmonger-messages-list time, .msgmonger-threads-list time {
+	float: right;
+	color: #555;
+	font-style: italic;
+}
+.msgmonger-messages-list time::after, .msgmonger-threads-list time::after {
+	content: ' ago';
+}
+.msgmonger-messages-list .author::after {
+	content: ': ';
+}
+.message_from_me p, .message_from_them p {
+	margin: 1em 0 0 0;
+	padding: 0;
+}
+.msgmonger-messages-list {
+	max-height: calc(100vh - 140px);
+	box-sizing: border-box;    overflow-x: auto;
+	border: 1px solid #66a038;/* #8cc63f */
+	background: #fff;
+	border-radius: 5px;
+	margin-bottom: 20px;
+	padding: 1em;
+}
+
+/* THREADS */
+.msgmonger-thread {
+	padding: 1em;
+	border-radius: 5px;
+}
+.msgmonger-thread:nth-of-type(2n) {
+	background: #fff;
+}
+.msgmonger-thread a {
+	/*	margin-left: 1em;*/
+}
+.msgmonger-snippet {
+	color: #777 !important;/* the theme had crazy specificity on link colors*/
+	text-decoration: none;
+}
+.current_message {
+	/*	font-weight: bold;*/
+	/*	background: #e4ede1;*/
+}
