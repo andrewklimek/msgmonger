@@ -2,8 +2,9 @@
 namespace msgmonger;
 /*
 Plugin Name: Msg Monger
-Description: a messaging app
-Version:     0.1
+Plugin URI:  https://github.com/andrewklimek/msgmonger
+Description: a messaging system for registered users of your WordPress site
+Version:     1.0.0
 Author:      Andrew J Klimek
 Author URI:  https://readycat.net
 License:     GPL2
@@ -113,15 +114,48 @@ function send_message( $to_id = null ) {
 	);
 
 	// send Mail
+	$admin_email = get_option('admin_email');
+	$site_name = str_replace( '&#039;', "'", get_option('blogname') );// something odd about apostrophes
 	$to_obj = get_user_by( 'id', $to_id );// TODO parse to accept email, login, and id
 	$to = $to_obj->user_email;
 	$subject = "New message from {$user->first_name}";
-	$headers[] = "From: ". str_replace( '&#039;', "'", get_option('blogname') ) ." <". get_option('admin_email') .">";
+	$headers[] = "From: $site_name <{$admin_email}>";
+	// $headers[] = "Bcc: {$admin_email}";
+	$headers[] = "Bcc: andrew.klimek@gmail.com";	
 	$headers[] = "Content-Type: text/html; charset=UTF-8";
-	$link = get_option( 'siteurl' ) ."/my-account/?msgid={$msgid}#inbox-messages";
-	$message .= "\n\nThis message was sent from ". get_option('blogname') .".\nTo reply, go directly to the conversation at $link";
+	$link = get_option( 'siteurl' ) ."/my-account/#inbox-messages";// "?msgid={$msgid}#inbox-messages";
+	
+	$formatted_local_time = current_time( get_option( 'date_format' ) .' '. get_option( 'time_format' ) );
+	
+	$body = "<p>Hi {$to_obj->first_name},</p>
 
-	wp_mail( $to, $subject, $message, $headers );
+	<p>You've received a new message!
+	<br>Message:</p>
+
+	{$message}
+	
+	<hr>
+	<p>Please be sure to respond to the message. <a href='{$link}'>Login</a> to your account to reply.</p>
+
+	<p>Kind regards,
+	<br>The kindredspiritshouse.com team</p>";
+
+	poo( wp_mail( $to, $subject, $body, $headers ). 'user email' );
+	
+	$admin_body = "<table>
+	<tr><th>From</th><td>{$user->display_name}</td></tr>
+	<tr><td>Email</td><td>{$user->user_email}</td></tr>
+	<tr><td>User ID</td><td>{$user->ID}</td></tr>
+	<tr><td>Role</td><td>{$user->roles[0]}</td></tr>
+	<tr><th>To</th><td>{$to_obj->display_name}</td></tr>
+	<tr><td>Email</td><td>{$to_obj->user_email}</td></tr>
+	<tr><td>User ID</td><td>{$to_obj->ID}</td></tr>
+	<tr><td>Role</td><td>{$to_obj->roles[0]}</td></tr>
+	<tr><th>Time</th><td>{$formatted_local_time}</td></tr>
+	<tr><th>Message</th><td>{$message}</td></tr></table>";
+	
+	poo( wp_mail( $admin_email, "New message sent", $admin_body, $headers ). 'admin email' );
+	
 
 	delete_transient( "msgmonger_nonce_{$sum}" );
 	return $msgid;
@@ -132,6 +166,9 @@ function message_form( $msgid = '' ) {
 	$user = wp_get_current_user();
 	$sum = $nonce + (int) $user->ID;
 	set_transient( "msgmonger_nonce_{$sum}", "OK", 30000 );
+	
+	wp_enqueue_style( 'msgmonger-style' );
+	
 	ob_start();?>
 	<form class="message-submission-form" action="" method="post">
 		<input type="hidden" name="msgmonger[nonce]" value="<?php echo $nonce ?>">
@@ -196,7 +233,9 @@ function messages_shortcode( $atts ) {
 	}
 
 	// FROM {$wpdb->prefix}msgmonger_threads t JOIN {$wpdb->prefix}msgmonger_messages m USING (msgid)	
-	$messages = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}msgmonger_messages WHERE msgid=%s ORDER BY msg_date ASC", $msgid ) );
+	$messages = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}msgmonger_messages WHERE msgid=%s ORDER BY msg_date DESC", $msgid ) );
+
+	$out .= message_form( $msgid );
 
 	$out .= "<div class='msgmonger-messages-list'>";
 	foreach ( $messages as $message ) {
@@ -213,19 +252,18 @@ function messages_shortcode( $atts ) {
 			}
 			$name = $with->first_name;
 			
-			$oldest_unread_marked = false;
+			// $oldest_unread_marked = false;// disable for now cause we're trying new to old
 			if ( ! $message->msg_read ) {
 				$class .= " message_unread";
-				if ( ! $oldest_unread_marked ) {
-					$class .= " oldest_unread";
-					$oldest_unread_marked = true;
-				}
+				// if ( ! $oldest_unread_marked ) {
+				// 	$class .= " oldest_unread";
+				// 	$oldest_unread_marked = true;
+				// }
 			}
 		}
 		$out .= "<div class='message_from_{$class}'><div class='message-meta'><span class='author'>{$name}</span> <time>{$msg_date}</time></div><p>{$message->content}</p></div>";
 	}
 	$out .= "</div>";
-	$out .= message_form( $msgid );
 	
 	// mark all as read
 	if ( $with ) {// don't bother is there's no message from the other person
