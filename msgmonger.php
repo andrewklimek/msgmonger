@@ -121,7 +121,7 @@ function send_message( $to_id = null ) {
 	$subject = "New message from {$user->first_name}";
 	$headers[] = "From: $site_name <{$admin_email}>";
 	// $headers[] = "Bcc: {$admin_email}";
-	$headers[] = "Bcc: andrew.klimek@gmail.com";	
+	// $headers[] = "Bcc: andrew.klimek@gmail.com";// for testing
 	$headers[] = "Content-Type: text/html; charset=UTF-8";
 	$link = get_option( 'siteurl' ) ."/my-account/#inbox-messages";// "?msgid={$msgid}#inbox-messages";
 	
