@@ -120,10 +120,9 @@ function send_message( $to_id = null ) {
 	$to = $to_obj->user_email;
 	$subject = "New message from {$user->first_name}";
 	$headers[] = "From: $site_name <{$admin_email}>";
-	// $headers[] = "Bcc: {$admin_email}";
 	// $headers[] = "Bcc: andrew.klimek@gmail.com";// for testing
 	$headers[] = "Content-Type: text/html; charset=UTF-8";
-	$link = get_option( 'siteurl' ) ."/my-account/#inbox-messages";// "?msgid={$msgid}#inbox-messages";
+	$link = get_option( 'siteurl' ) ."/login/";// get_option( 'siteurl' ) ."/my-account/?msgid={$msgid}#inbox-messages";
 	
 	$formatted_local_time = current_time( get_option( 'date_format' ) .' '. get_option( 'time_format' ) );
 	
@@ -140,7 +139,7 @@ function send_message( $to_id = null ) {
 	<p>Kind regards,
 	<br>The kindredspiritshouse.com team</p>";
 
-	poo( wp_mail( $to, $subject, $body, $headers ). 'user email' );
+	wp_mail( $to, $subject, $body, $headers );
 	
 	$admin_body = "<table>
 	<tr><th>From</th><td>{$user->display_name}</td></tr>
@@ -154,7 +153,7 @@ function send_message( $to_id = null ) {
 	<tr><th>Time</th><td>{$formatted_local_time}</td></tr>
 	<tr><th>Message</th><td>{$message}</td></tr></table>";
 	
-	poo( wp_mail( $admin_email, "New message sent", $admin_body, $headers ). 'admin email' );
+	wp_mail( $admin_email, "New message sent", $admin_body, $headers );
 	
 
 	delete_transient( "msgmonger_nonce_{$sum}" );
@@ -395,4 +394,71 @@ function create_database() {
 
 function activation() {
 	create_database();
+}
+
+function import_messages() {
+	
+	$csv = array_map( 'str_getcsv', file( __DIR__.'/data.csv', FILE_SKIP_EMPTY_LINES ) );
+	
+	// remove header row
+	array_shift( $csv );
+
+	foreach ( $csv as $row ) {
+		// $row = $csv[0];// for testing first row only.  disable foreach
+
+		global $wpdb;
+
+		$message = '<p>' . str_replace( '\\n', '</p><p>', $row[0] ) . '</p>';
+
+		$to_obj = get_user_by( 'email', $row[1] );
+		$user = get_user_by( 'id', $row[3] );
+
+		if ( $to_obj  === false || $user === false ) {
+			poo( $row, 'this row had a missing user' );
+			continue;
+		}
+
+		$local_timestamp = $row[4];
+		$date_gmt_sql = get_gmt_from_date( date( 'Y-m-d H:i:s', strtotime( $local_timestamp ) ) );
+
+		// make message ID
+
+		// concatenate both user IDs, lowest first
+		$msgid = $user->ID < $to_obj->ID ? $user->ID . $to_obj->ID : $to_obj->ID . $user->ID;
+		// make 8 char hash from user IDs
+		$msgid = hash( 'crc32b', $msgid );
+		// add another 8 characters to the hash, what the heck
+		$msgid .= hash( 'adler32', $msgid );
+
+		// check for that msgid
+		$thread = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}msgmonger_threads WHERE msgid=%s", $msgid ) );
+
+		// if it doens't exist, create it
+		if ( $thread === null ) {
+
+			$wpdb->insert(
+			"{$wpdb->prefix}msgmonger_threads",
+				array(
+					"msgid"		=>	$msgid,
+					"init_from"	=>	$user->ID,
+					"init_to"	=>	$to_obj->ID
+				),
+				array( '%s', '%d', '%d' )
+			);
+		}
+
+		// Make the New Message
+
+		$wpdb->insert(
+		"{$wpdb->prefix}msgmonger_messages",
+			array(
+				"msgid"		=>	$msgid,
+				"msg_from"	=>	$user->ID,
+				"content"	=>	$message,
+				"msg_date"	=>	$date_gmt_sql,
+				"msg_read"	=>	1,
+			),
+			array( '%s', '%d', '%s', '%s' )
+		);
+	}
 }
