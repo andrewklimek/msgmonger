@@ -6,7 +6,7 @@ Plugin URI:  https://github.com/andrewklimek/msgmonger
 Description: a messaging system for registered users of your WordPress site
 Version:     1.0.0
 Author:      Andrew J Klimek
-Author URI:  https://readycat.net
+Author URI:  https://github.com/andrewklimek
 License:     GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
